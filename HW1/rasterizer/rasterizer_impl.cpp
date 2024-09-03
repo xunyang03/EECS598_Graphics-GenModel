@@ -9,7 +9,7 @@ void Rasterizer::DrawPixel(uint32_t x, uint32_t y, Triangle trig, AntiAliasConfi
 {
     if (config == AntiAliasConfig::NONE)            // if anti-aliasing is off
     {
-
+        // task:1.5
     }
     else if (config == AntiAliasConfig::SSAA)       // if anti-aliasing is on
     {
