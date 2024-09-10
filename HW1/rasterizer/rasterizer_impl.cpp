@@ -9,7 +9,8 @@ void Rasterizer::DrawPixel(uint32_t x, uint32_t y, Triangle trig, AntiAliasConfi
 {
     if (config == AntiAliasConfig::NONE)            // if anti-aliasing is off
     {
-        // task:1.5
+        if (threeXProduct(x, y, trig)
+            image.Set(x, y, color);                 // write to the corresponding pixel
     }
     else if (config == AntiAliasConfig::SSAA)       // if anti-aliasing is on
     {
@@ -20,6 +21,23 @@ void Rasterizer::DrawPixel(uint32_t x, uint32_t y, Triangle trig, AntiAliasConfi
     image.Set(x, y, color);
 
     return;
+}
+
+bool threeXProduct(uint32_t x, uint32_t y, Triangle trig) {
+    glm::vec2 A1(trig.pos[0].x, trig.pos[0].y);
+    glm::vec2 A2(trig.pos[1].x, trig.pos[1].y);
+    glm::vec2 A3(trig.pos[2].x, trig.pos[2].y);
+    glm::vec2 X(x, y);
+
+    float cross1 = cross2D((X - A1), (A2 - A1));
+    float cross2 = cross2D((X - A2), (A3 - A2));
+    float cross3 = cross2D((X - A3), (A1 - A3));
+    // inside the triangle if and only if the three cross products have the same sign
+    return (cross1 >= 0 && cross2 >= 0 && cross3 >= 0) || (cross1 < 0 && cross2 < 0 && cross3 < 0); 
+}
+
+float cross2D(const glm::vec2& v1, const glm::vec2& v2) {
+    return v1.x * v2.y - v1.y * v2.x;
 }
 
 // TODO
