@@ -63,9 +63,16 @@ void Rasterizer::AddModel(MeshTransform transform, glm::mat4 rotation)
 // TODO
 void Rasterizer::SetView()
 {
+<<<<<<< HEAD
 	const Camera& camera = this->loader.GetCamera();
 	glm::vec3 cameraPos = camera.pos;
 	glm::vec3 cameraLookAt = camera.lookAt;
+=======
+    const Camera& camera = this->loader.GetCamera();
+    glm::vec3 cameraPos = camera.pos;
+    glm::vec3 cameraLookAt = camera.lookAt;
+    glm::vec3 cameraUp = camera.up;
+>>>>>>> upstream/main
 
 	// TODO change this line to the correct view matrix
 	this->view = glm::mat4(1.);
