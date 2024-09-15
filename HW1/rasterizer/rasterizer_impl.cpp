@@ -56,23 +56,28 @@ void Rasterizer::DrawPixel(uint32_t x, uint32_t y, Triangle trig, AntiAliasConfi
 // TODO
 void Rasterizer::AddModel(MeshTransform transform, glm::mat4 rotation)
 {
-	/* model.push_back( model transformation constructed from translation, rotation and scale );*/
+	glm::mat4 M_rot = rotation;
+	glm::vec3 translation = transform.translation, scale = transform.scale;
+	glm::mat4 M_trans(1.0f, 0.0f, 0.0f, translation.x,
+		0.0f, 1.0f, 0.0f, translation.y,
+		0.0f, 0.0f, 1.0f, translation.z,
+		0.0f, 0.0f, 0.0f, 1.0f);
+	glm::mat4 M_scale(scale.x, 0.0f, 0.0f, 0.0f,
+		0.0f, scale.y,  0.0f, 0.0f,
+		0.0f, 0.0f, scale.z,  0.0f,
+		0.0f, 0.0f, 0.0f, 1.0f);
+	
+	model.push_back(M_trans * M_rot * M_scale); // T * R * S
 	return;
 }
 
 // TODO
 void Rasterizer::SetView()
 {
-<<<<<<< HEAD
-	const Camera& camera = this->loader.GetCamera();
-	glm::vec3 cameraPos = camera.pos;
-	glm::vec3 cameraLookAt = camera.lookAt;
-=======
     const Camera& camera = this->loader.GetCamera();
     glm::vec3 cameraPos = camera.pos;
     glm::vec3 cameraLookAt = camera.lookAt;
     glm::vec3 cameraUp = camera.up;
->>>>>>> upstream/main
 
 	// TODO change this line to the correct view matrix
 	this->view = glm::mat4(1.);
