@@ -1,6 +1,7 @@
 #include <cstdint>
 #include <vector>
-
+#include <cmath>
+#include <iostream>
 #include "image.hpp"
 #include "loader.hpp"
 #include "rasterizer.hpp"
@@ -58,17 +59,27 @@ void Rasterizer::AddModel(MeshTransform transform, glm::mat4 rotation)
 {
 	glm::mat4 M_rot = rotation;
 	glm::vec3 translation = transform.translation, scale = transform.scale;
-	glm::mat4 M_trans(1.0f, 0.0f, 0.0f, translation.x,
+	glm::mat4 M_trans = glm::transpose(glm::mat4(
+		1.0f, 0.0f, 0.0f, translation.x,
 		0.0f, 1.0f, 0.0f, translation.y,
 		0.0f, 0.0f, 1.0f, translation.z,
-		0.0f, 0.0f, 0.0f, 1.0f);
-	glm::mat4 M_scale(scale.x, 0.0f, 0.0f, 0.0f,
+		0.0f, 0.0f, 0.0f, 1.0f));
+	glm::mat4 M_scale = glm::transpose(glm::mat4(
+		scale.x, 0.0f, 0.0f, 0.0f,
 		0.0f, scale.y,  0.0f, 0.0f,
 		0.0f, 0.0f, scale.z,  0.0f,
-		0.0f, 0.0f, 0.0f, 1.0f);
+		0.0f, 0.0f, 0.0f, 1.0f));
 	
-	model.push_back(M_trans * M_rot * M_scale); // T * R * S
+	//model.push_back(M_trans * M_rot * M_scale); // T * R * S
+	model.push_back(M_scale * M_trans * M_rot);
 	return;
+}
+
+glm::vec3 normalizeVec(glm::vec3 vec) {
+	float dist = std::sqrt(vec.x * vec.x + vec.y * vec.y + vec.z * vec.z);
+	if (dist == 0.0f)
+		return glm::vec3(0.0f, 0.0f, 0.0f);  // Return zero vector in this case
+	return glm::vec3(vec.x / dist, vec.y / dist, vec.z / dist);
 }
 
 // TODO
@@ -79,8 +90,22 @@ void Rasterizer::SetView()
     glm::vec3 cameraLookAt = camera.lookAt;
     glm::vec3 cameraUp = camera.up;
 
+	glm::vec3 g = normalizeVec(cameraLookAt - cameraPos);
+	glm::vec3 h = normalizeVec(cameraUp);
+	glm::vec3 f = normalizeVec(glm::cross(g, h)); // binormal axis
+	// check orthonormal
+	glm::mat4 M_rot = glm::transpose(glm::mat4(
+		f.x, f.y, f.z, 0.0f,
+		h.x, h.y, h.z, 0.0f,
+		-g.x, -g.y, -g.z, 0.0f,
+		0.0f, 0.0f, 0.0f, 1.0f));
+	glm::mat4 M_trans = glm::transpose(glm::mat4(
+		1.0f, 0.0f, 0.0f, -cameraPos.x,
+		0.0f, 1.0f, 0.0f, -cameraPos.y,
+		0.0f, 0.0f, 1.0f, -cameraPos.z,
+		0.0f, 0.0f, 0.0f, 1.0f));
 	// TODO change this line to the correct view matrix
-	this->view = glm::mat4(1.);
+	this->view = M_rot * M_trans;
 
 	return;
 }
@@ -96,8 +121,24 @@ void Rasterizer::SetProjection()
 	float width = this->loader.GetWidth();
 	float height = this->loader.GetHeight();
 
-	// TODO change this line to the correct projection matrix
-	this->projection = glm::mat4(1.);
+	// perspective projection
+	glm::mat4 M_persp2ortho = glm::transpose(glm::mat4(
+		nearClip, 0.0f, 0.0f, 0.0f,
+		0.0f, nearClip, 0.0f, 0.0f,
+		0.0f, 0.0f, nearClip + farClip, -nearClip * farClip,
+		0.0f, 0.0f, 1.0f, 0.0f));
+	glm::mat4 M_ortho_scale = glm::transpose(glm::mat4(
+		2.0f / width, 0.0f, 0.0f, 0.0f,
+		0.0f, 2.0f / height, 0.0f, 0.0f,
+		0.0f, 0.0f, 2.0f / (nearClip - farClip), 0.0f,
+		0.0f, 0.0f, 0.0f, 1.0f));
+	glm::mat4 M_ortho_trans = glm::transpose(glm::mat4(
+		1.0f, 0.0f, 0.0f, 0.0f,
+		0.0f, 1.0f, 0.0f, 0.0f,
+		0.0f, 0.0f, 1.0f, -(nearClip + farClip)/2.0f,
+		0.0f, 0.0f, 0.0f, 1.0f));
+	glm::mat4 M_ortho2canon = M_ortho_scale * M_ortho_trans;
+	this->projection = M_ortho2canon * M_persp2ortho;
 
 	return;
 }
@@ -108,8 +149,12 @@ void Rasterizer::SetScreenSpace()
 	float width = this->loader.GetWidth();
 	float height = this->loader.GetHeight();
 
-	// TODO change this line to the correct screenspace matrix
-	this->screenspace = glm::mat4(1.);
+	glm::mat4 M_ss = glm::transpose(glm::mat4(
+		width / 2.0f, 0.0f, 0.0f, (width )/2.0f,
+		0.0f, height / 2.0f, 0.0f, (height )/2.0f,
+		0.0f, 0.0f, 1.0f, 0.0f,
+		0.0f, 0.0f, 0.0f, 1.0f));
+	this->screenspace = M_ss;
 
 	return;
 }
