@@ -70,8 +70,8 @@ void Rasterizer::AddModel(MeshTransform transform, glm::mat4 rotation)
 		0.0f, 0.0f, scale.z,  0.0f,
 		0.0f, 0.0f, 0.0f, 1.0f));
 	
-	//model.push_back(M_trans * M_rot * M_scale); // T * R * S
-	model.push_back(M_scale * M_trans * M_rot);
+	model.push_back(M_trans * M_rot * M_scale); // T * R * S
+	//model.push_back(M_rot * M_trans * M_scale);
 	return;
 }
 
@@ -89,11 +89,11 @@ void Rasterizer::SetView()
     glm::vec3 cameraPos = camera.pos;
     glm::vec3 cameraLookAt = camera.lookAt;
     glm::vec3 cameraUp = camera.up;
-
+	// ensure to be orthonormal axes
 	glm::vec3 g = normalizeVec(cameraLookAt - cameraPos);
 	glm::vec3 h = normalizeVec(cameraUp);
 	glm::vec3 f = normalizeVec(glm::cross(g, h)); // binormal axis
-	// check orthonormal
+
 	glm::mat4 M_rot = glm::transpose(glm::mat4(
 		f.x, f.y, f.z, 0.0f,
 		h.x, h.y, h.z, 0.0f,
@@ -104,7 +104,7 @@ void Rasterizer::SetView()
 		0.0f, 1.0f, 0.0f, -cameraPos.y,
 		0.0f, 0.0f, 1.0f, -cameraPos.z,
 		0.0f, 0.0f, 0.0f, 1.0f));
-	// TODO change this line to the correct view matrix
+
 	this->view = M_rot * M_trans;
 
 	return;
@@ -121,21 +121,24 @@ void Rasterizer::SetProjection()
 	float width = this->loader.GetWidth();
 	float height = this->loader.GetHeight();
 
+	float n = -nearClip, f = -farClip;
 	// perspective projection
 	glm::mat4 M_persp2ortho = glm::transpose(glm::mat4(
-		nearClip, 0.0f, 0.0f, 0.0f,
-		0.0f, nearClip, 0.0f, 0.0f,
-		0.0f, 0.0f, nearClip + farClip, -nearClip * farClip,
+		n, 0.0f, 0.0f, 0.0f,
+		0.0f, n, 0.0f, 0.0f,
+		0.0f, 0.0f, n + f, -n * f,
 		0.0f, 0.0f, 1.0f, 0.0f));
+	// orthonormal projection
+	float width_c = camera.width, height_c = camera.height;
 	glm::mat4 M_ortho_scale = glm::transpose(glm::mat4(
-		2.0f / width, 0.0f, 0.0f, 0.0f,
-		0.0f, 2.0f / height, 0.0f, 0.0f,
-		0.0f, 0.0f, 2.0f / (nearClip - farClip), 0.0f,
+		2.0f / width_c, 0.0f, 0.0f, 0.0f,
+		0.0f, 2.0f / height_c, 0.0f, 0.0f,
+		0.0f, 0.0f, 2.0f / (n - f), 0.0f,
 		0.0f, 0.0f, 0.0f, 1.0f));
 	glm::mat4 M_ortho_trans = glm::transpose(glm::mat4(
 		1.0f, 0.0f, 0.0f, 0.0f,
 		0.0f, 1.0f, 0.0f, 0.0f,
-		0.0f, 0.0f, 1.0f, -(nearClip + farClip)/2.0f,
+		0.0f, 0.0f, 1.0f, -(n + f)/2.0f,
 		0.0f, 0.0f, 0.0f, 1.0f));
 	glm::mat4 M_ortho2canon = M_ortho_scale * M_ortho_trans;
 	this->projection = M_ortho2canon * M_persp2ortho;
@@ -150,8 +153,8 @@ void Rasterizer::SetScreenSpace()
 	float height = this->loader.GetHeight();
 
 	glm::mat4 M_ss = glm::transpose(glm::mat4(
-		width / 2.0f, 0.0f, 0.0f, (width )/2.0f,
-		0.0f, height / 2.0f, 0.0f, (height )/2.0f,
+		width / 2.0f, 0.0f, 0.0f, width / 2.0f,
+		0.0f, height / 2.0f, 0.0f, height / 2.0f,
 		0.0f, 0.0f, 1.0f, 0.0f,
 		0.0f, 0.0f, 0.0f, 1.0f));
 	this->screenspace = M_ss;
