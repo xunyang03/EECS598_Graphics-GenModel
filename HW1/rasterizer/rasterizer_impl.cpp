@@ -121,7 +121,7 @@ void Rasterizer::SetProjection()
 	float width = this->loader.GetWidth();
 	float height = this->loader.GetHeight();
 
-	float n = -nearClip, f = -farClip;
+	float n = -nearClip, f = -farClip;	// convert to +z axis
 	// perspective projection
 	glm::mat4 M_persp2ortho = glm::transpose(glm::mat4(
 		n, 0.0f, 0.0f, 0.0f,
@@ -165,17 +165,32 @@ void Rasterizer::SetScreenSpace()
 // TODO
 glm::vec3 Rasterizer::BarycentricCoordinate(glm::vec2 pos, Triangle trig)
 {
-	return glm::vec3();
+	trig.Homogenize();
+	glm::vec2 A(trig.pos[0].x, trig.pos[0].y);
+	glm::vec2 B(trig.pos[1].x, trig.pos[1].y);
+	glm::vec2 C(trig.pos[2].x, trig.pos[2].y);
+	float alpha = (-(pos.x - B.x) * (C.y - B.y) + (pos.y - B.y) * (C.x - B.x)) /
+		(-(A.x - B.x) * (C.y - B.y) + (A.y - B.y) * (C.x - B.x));
+	float beta = (-(pos.x - C.x) * (A.y - C.y) + (pos.y - C.y) * (A.x - C.x)) /
+		(-(B.x - C.x) * (A.y - C.y) + (B.y - C.y) * (A.x - C.x));
+	if (alpha > 1 || beta > 1 || alpha < 0 || beta < 0)
+	{
+		std::cout << "Error in Barycentric Coordinate" << std::endl;
+		return glm::vec3(0.0f);
+	}
+	return glm::vec3(alpha, beta, 1 - alpha - beta);
 }
 
 // TODO
-float Rasterizer::zBufferDefault = float();
+float Rasterizer::zBufferDefault = float(INFINITY); // represent to the infinite depth
 
 // TODO
 void Rasterizer::UpdateDepthAtPixel(uint32_t x, uint32_t y, Triangle original, Triangle transformed, ImageGrey& ZBuffer)
 {
-
-	float result;
+	glm::vec3 baryCoords = BarycentricCoordinate(glm::vec2(x + 0.5f, y + 0.5f), transformed));
+	float result = baryCoords.x * original.pos[0].z + 
+		baryCoords.y * original.pos[1].z + 
+		baryCoords.z * original.pos[2].z; // between -1 and 1
 	ZBuffer.Set(x, y, result);
 
 	return;
