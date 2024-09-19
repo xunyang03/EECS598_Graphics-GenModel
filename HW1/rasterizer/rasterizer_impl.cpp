@@ -11,8 +11,9 @@ float cross2D(const glm::vec2& v1, const glm::vec2& v2) {
 	return v1.x * v2.y - v1.y * v2.x;
 }
 
-// judge whether a point is inside the triangle
-template<typename T> bool threeXProduct(T x, T y, Triangle trig) {
+// three cross product  -- judge a 2D point
+template<typename T> 
+bool threeXProduct(T x, T y, Triangle& trig) {
 	glm::vec2 A1(trig.pos[0].x, trig.pos[0].y);
 	glm::vec2 A2(trig.pos[1].x, trig.pos[1].y);
 	glm::vec2 A3(trig.pos[2].x, trig.pos[2].y);
@@ -21,9 +22,21 @@ template<typename T> bool threeXProduct(T x, T y, Triangle trig) {
 	float cross2 = cross2D((X - A2), (A3 - A2));
 	float cross3 = cross2D((X - A3), (A1 - A3));
 	// X is inside the triangle if and only if the three cross products have the same sign
-	return (cross1 >= 0 && cross2 >= 0 && cross3 >= 0) || (cross1 < 0 && cross2 < 0 && cross3 < 0);
+	return (cross1 >= 0 && cross2 >= 0 && cross3 >= 0) 
+		|| (cross1 <= 0 && cross2 <= 0 && cross3 <= 0);
 }
 
+// three cross product -- judge a 3D point
+bool threeXProduct_3D(const glm::vec3& X,const Triangle& trig) {
+	glm::vec3 A1(trig.pos[0].x, trig.pos[0].y, trig.pos[0].z);
+	glm::vec3 A2(trig.pos[1].x, trig.pos[1].y, trig.pos[1].z);
+	glm::vec3 A3(trig.pos[2].x, trig.pos[2].y, trig.pos[2].z);
+	glm::vec3 cross1 = glm::cross((X - A1), (A2 - A1));
+	glm::vec3 cross2 = glm::cross((X - A2), (A3 - A2));
+	glm::vec3 cross3 = glm::cross((X - A3), (A1 - A3));
+	return ((cross1.z >= 0 && cross2.z >= 0 && cross3.z >= 0)
+		|| (cross1.z <= 0 && cross2.z <= 0 && cross3.z <= 0));
+}
 
 // TODO
 void Rasterizer::DrawPixel(uint32_t x, uint32_t y, Triangle trig, AntiAliasConfig config, uint32_t spp, Image& image, Color color)
@@ -165,7 +178,7 @@ void Rasterizer::SetScreenSpace()
 // TODO
 glm::vec3 Rasterizer::BarycentricCoordinate(glm::vec2 pos, Triangle trig)
 {
-	trig.Homogenize();
+	//trig.Homogenize();
 	glm::vec2 A(trig.pos[0].x, trig.pos[0].y);
 	glm::vec2 B(trig.pos[1].x, trig.pos[1].y);
 	glm::vec2 C(trig.pos[2].x, trig.pos[2].y);
@@ -178,20 +191,25 @@ glm::vec3 Rasterizer::BarycentricCoordinate(glm::vec2 pos, Triangle trig)
 		std::cout << "Error in Barycentric Coordinate" << std::endl;
 		return glm::vec3(0.0f);
 	}
-	return glm::vec3(alpha, beta, 1 - alpha - beta);
+	return glm::vec3(alpha, beta, 1.0f - alpha - beta);
 }
 
 // TODO
-float Rasterizer::zBufferDefault = float(INFINITY); // represent to the infinite depth
+//float Rasterizer::zBufferDefault = float(INFINITY); // represent to the infinite depth
+float Rasterizer::zBufferDefault = -1.0f;
 
 // TODO
 void Rasterizer::UpdateDepthAtPixel(uint32_t x, uint32_t y, Triangle original, Triangle transformed, ImageGrey& ZBuffer)
 {
-	glm::vec3 baryCoords = BarycentricCoordinate(glm::vec2(x + 0.5f, y + 0.5f), transformed));
-	float result = baryCoords.x * original.pos[0].z + 
-		baryCoords.y * original.pos[1].z + 
-		baryCoords.z * original.pos[2].z; // between -1 and 1
-	ZBuffer.Set(x, y, result);
+	// for each pixel in triangle
+	if (threeXProduct_3D(glm::vec3(x + 0.5f, y + 0.5f, 0.0f), transformed)) {
+		glm::vec3 baryCoords = BarycentricCoordinate(glm::vec2(x + 0.5f, y + 0.5f), transformed);
+		float result = baryCoords.x * original.pos[0].z +
+			baryCoords.y * original.pos[1].z +
+			baryCoords.z * original.pos[2].z; // between -1 and 1
+		if (result > ZBuffer.Get(x, y))
+			ZBuffer.Set(x, y, result);
+	}
 
 	return;
 }
@@ -199,9 +217,43 @@ void Rasterizer::UpdateDepthAtPixel(uint32_t x, uint32_t y, Triangle original, T
 // TODO
 void Rasterizer::ShadeAtPixel(uint32_t x, uint32_t y, Triangle original, Triangle transformed, Image& image)
 {
+	if (threeXProduct_3D(glm::vec3(x + 0.5f, y + 0.5f, 0.0f), transformed)) {
+		glm::vec3 baryCoords = BarycentricCoordinate(glm::vec2(x + 0.5f, y + 0.5f), transformed);
+		float depth = baryCoords.x * original.pos[0].z +
+			baryCoords.y * original.pos[1].z +
+			baryCoords.z * original.pos[2].z;
+		if (depth == this->ZBuffer.Get(x, y)) {
+			// coordinates in the world space
+			glm::vec3 worldCoords = baryCoords.x * original.pos[0] +
+				baryCoords.y * original.pos[1] +
+				baryCoords.z * original.pos[2];
+			// retrieve the surface normal
+			glm::vec3 n = normalizeVec(baryCoords.x * original.normal[0] +
+				baryCoords.y * original.normal[1] + 
+				baryCoords.z * original.normal[2]);
+			// Blinn-Phong model
+			const std::vector<Light>& lights = this->loader.GetLights();
+			const Color& ambientColor = this->loader.GetAmbientColor();
+			const Camera& camera = this->loader.GetCamera();
+			float e = this->loader.GetSpecularExponent();
+			
+			Color result = ambientColor;
+			for (const auto& light : lights) {
+				glm::vec3 v = normalizeVec(camera.pos - worldCoords); // viewer direction
+				glm::vec3 l = normalizeVec(light.pos - worldCoords); // light direction
+				glm::vec3 h = normalizeVec(v + l);					// half vector near normal
+				float r = glm::length(light.pos - worldCoords);		// distance from the light
+				
+				Color diffuseColor = light.color * (light.intensity / std::pow(r, 2))
+					* std::max(0.0f, glm::dot(l, n));
+				Color specularColor = light.color * (light.intensity / std::pow(r, 2))
+					* std::pow(std::max(0.0f, glm::dot(n, h)), e);
+				result = result + diffuseColor + specularColor;
+			}
 
-	Color result;
-	image.Set(x, y, result);
-
+			image.Set(x, y, result);
+		}
+	}
+	
 	return;
 }
