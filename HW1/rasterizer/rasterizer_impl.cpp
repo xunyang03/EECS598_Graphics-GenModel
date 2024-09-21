@@ -26,18 +26,6 @@ bool threeXProduct(T x, T y, Triangle& trig) {
 		|| (cross1 <= 0 && cross2 <= 0 && cross3 <= 0);
 }
 
-// three cross product -- judge a 3D point
-bool threeXProduct_3D(const glm::vec3& X,const Triangle& trig) {
-	glm::vec3 A1(trig.pos[0].x, trig.pos[0].y, trig.pos[0].z);
-	glm::vec3 A2(trig.pos[1].x, trig.pos[1].y, trig.pos[1].z);
-	glm::vec3 A3(trig.pos[2].x, trig.pos[2].y, trig.pos[2].z);
-	glm::vec3 cross1 = glm::cross((X - A1), (A2 - A1));
-	glm::vec3 cross2 = glm::cross((X - A2), (A3 - A2));
-	glm::vec3 cross3 = glm::cross((X - A3), (A1 - A3));
-	return ((cross1.z >= 0 && cross2.z >= 0 && cross3.z >= 0)
-		|| (cross1.z <= 0 && cross2.z <= 0 && cross3.z <= 0));
-}
-
 // TODO
 void Rasterizer::DrawPixel(uint32_t x, uint32_t y, Triangle trig, AntiAliasConfig config, uint32_t spp, Image& image, Color color)
 {
@@ -63,7 +51,6 @@ void Rasterizer::DrawPixel(uint32_t x, uint32_t y, Triangle trig, AntiAliasConfi
 		Color color_fine = color * (static_cast<float>(count) / (spp * spp));
 		image.Set(x, y, color_fine);
 	}
-
 	return;
 }
 
@@ -84,7 +71,6 @@ void Rasterizer::AddModel(MeshTransform transform, glm::mat4 rotation)
 		0.0f, 0.0f, 0.0f, 1.0f));
 	
 	model.push_back(M_trans * M_rot * M_scale); // T * R * S
-	//model.push_back(M_rot * M_trans * M_scale);
 	return;
 }
 
@@ -119,7 +105,6 @@ void Rasterizer::SetView()
 		0.0f, 0.0f, 0.0f, 1.0f));
 
 	this->view = M_rot * M_trans;
-
 	return;
 }
 
@@ -155,7 +140,6 @@ void Rasterizer::SetProjection()
 		0.0f, 0.0f, 0.0f, 1.0f));
 	glm::mat4 M_ortho2canon = M_ortho_scale * M_ortho_trans;
 	this->projection = M_ortho2canon * M_persp2ortho;
-
 	return;
 }
 
@@ -171,14 +155,13 @@ void Rasterizer::SetScreenSpace()
 		0.0f, 0.0f, 1.0f, 0.0f,
 		0.0f, 0.0f, 0.0f, 1.0f));
 	this->screenspace = M_ss;
-
 	return;
 }
 
 // TODO
 glm::vec3 Rasterizer::BarycentricCoordinate(glm::vec2 pos, Triangle trig)
 {
-	//trig.Homogenize();
+	// trig.Homogenize();
 	glm::vec2 A(trig.pos[0].x, trig.pos[0].y);
 	glm::vec2 B(trig.pos[1].x, trig.pos[1].y);
 	glm::vec2 C(trig.pos[2].x, trig.pos[2].y);
@@ -202,22 +185,22 @@ float Rasterizer::zBufferDefault = -1.0f;
 void Rasterizer::UpdateDepthAtPixel(uint32_t x, uint32_t y, Triangle original, Triangle transformed, ImageGrey& ZBuffer)
 {
 	// for each pixel in triangle
-	if (threeXProduct_3D(glm::vec3(x + 0.5f, y + 0.5f, 0.0f), transformed)) {
+	if (threeXProduct(x + 0.5f, y + 0.5f, transformed)) {
 		glm::vec3 baryCoords = BarycentricCoordinate(glm::vec2(x + 0.5f, y + 0.5f), transformed);
 		float result = baryCoords.x * original.pos[0].z +
 			baryCoords.y * original.pos[1].z +
 			baryCoords.z * original.pos[2].z; // between -1 and 1
 		if (result > ZBuffer.Get(x, y))
+			// update the ZBuffer with the new depth
 			ZBuffer.Set(x, y, result);
 	}
-
 	return;
 }
 
 // TODO
 void Rasterizer::ShadeAtPixel(uint32_t x, uint32_t y, Triangle original, Triangle transformed, Image& image)
 {
-	if (threeXProduct_3D(glm::vec3(x + 0.5f, y + 0.5f, 0.0f), transformed)) {
+	if (threeXProduct(x + 0.5f, y + 0.5f, transformed)) {
 		glm::vec3 baryCoords = BarycentricCoordinate(glm::vec2(x + 0.5f, y + 0.5f), transformed);
 		float depth = baryCoords.x * original.pos[0].z +
 			baryCoords.y * original.pos[1].z +
@@ -244,16 +227,15 @@ void Rasterizer::ShadeAtPixel(uint32_t x, uint32_t y, Triangle original, Triangl
 				glm::vec3 h = normalizeVec(v + l);					// half vector near normal
 				float r = glm::length(light.pos - worldCoords);		// distance from the light
 				
-				Color diffuseColor = light.color * (light.intensity / std::pow(r, 2))
-					* std::max(0.0f, glm::dot(l, n));
-				Color specularColor = light.color * (light.intensity / std::pow(r, 2))
-					* std::pow(std::max(0.0f, glm::dot(n, h)), e);
+				Color diffuseColor = light.color * (light.intensity / std::pow(r, 2)
+					* std::max(0.0f, glm::dot(l, n)));
+				Color specularColor = light.color * (light.intensity / std::pow(r, 2)
+					* std::pow(std::max(0.0f, glm::dot(n, h)), e));
 				result = result + diffuseColor + specularColor;
 			}
-
+			// write the color to the image
 			image.Set(x, y, result);
 		}
-	}
-	
+	}	
 	return;
 }
