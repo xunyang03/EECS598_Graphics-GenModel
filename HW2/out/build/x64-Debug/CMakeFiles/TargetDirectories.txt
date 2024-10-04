@@ -1,0 +1,3 @@
+D:/GraphicsandGenModel/EECS598_Graphics-GenModel/HW2/out/build/x64-Debug/CMakeFiles/RayTracing.dir
+D:/GraphicsandGenModel/EECS598_Graphics-GenModel/HW2/out/build/x64-Debug/CMakeFiles/edit_cache.dir
+D:/GraphicsandGenModel/EECS598_Graphics-GenModel/HW2/out/build/x64-Debug/CMakeFiles/rebuild_cache.dir
