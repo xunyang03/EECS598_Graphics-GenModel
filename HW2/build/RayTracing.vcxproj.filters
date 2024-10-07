@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="D:\GraphicsandGenModel\EECS598_Graphics-GenModel\HW2\main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\GraphicsandGenModel\EECS598_Graphics-GenModel\HW2\Scene.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\GraphicsandGenModel\EECS598_Graphics-GenModel\HW2\Accel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\GraphicsandGenModel\EECS598_Graphics-GenModel\HW2\Math.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\GraphicsandGenModel\EECS598_Graphics-GenModel\HW2\Ray.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\GraphicsandGenModel\EECS598_Graphics-GenModel\HW2\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{D3D5FDFB-F9E2-3D86-94D4-DDB26F459B9E}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

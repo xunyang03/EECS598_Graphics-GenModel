@@ -13,9 +13,32 @@ Vec3 Scene::trace(const Ray &ray, int bouncesLeft, bool discardEmission) {
     }
     if (bouncesLeft < 0) return {};
 
-    // TODO...
-    
-    return {};
+    // TODO
+    Intersection inter = getIntersection(ray);
+    // intersection false
+    if (!inter.happened) 
+        return Vec3(0.0f, 0.0f, 0.0f);
+    // Task 5.3 Diffuse scene
+    //Vec3 diffuseColor = inter.object->kd; // diffuse    
+    //return diffuseColor;
+
+    // Task 6.3 Estimate DI by Monte Carlo sampling
+    Vec3 R_out = inter.object->ke; // emission
+    Vec3 sample_dir = Random::randomHemisphereDirection(inter.getNormal()); // w_i
+    Ray nextRay(inter.pos, sample_dir); // construct the secondRay
+    // if the sampling ray intersects
+    if (getIntersection(nextRay).happened) {
+        // Task 6 Direct Illumination
+        //Vec3 L_i = getIntersection(nextRay).object->ke; // emission radiance
+        
+        // Task 7 Global Illumination
+        Vec3 L_i = trace(nextRay, bouncesLeft - 1, false); // recursion
+        Vec3 brdf = inter.calcBRDF(-sample_dir, -ray.dir); // fr
+        float cosineTerm = nextRay.dir.dot(inter.getNormal());
+        R_out += (2 * PI) * L_i * brdf * cosineTerm;
+    }
+
+    return R_out;
 }
 
 tinyobj::ObjReader Scene::reader {};

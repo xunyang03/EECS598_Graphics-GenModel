@@ -1,0 +1,10 @@
+^D:\GRAPHICSANDGENMODEL\EECS598_GRAPHICS-GENMODEL\HW2\CMAKELISTS.TXT
+setlocal
+"D:\Program Files\Microsoft Visual Studio\2022\Professional\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -SD:/GraphicsandGenModel/EECS598_Graphics-GenModel/HW2 -BD:/GraphicsandGenModel/EECS598_Graphics-GenModel/HW2/build --check-stamp-file D:/GraphicsandGenModel/EECS598_Graphics-GenModel/HW2/build/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
