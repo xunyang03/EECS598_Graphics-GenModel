@@ -167,6 +167,11 @@ Vec3 Random::cosWeightedHemisphere(const Vec3 &normal) {
     */
     float azimuth = 0.0f;
     float elevation = 0.0f;
+    // Task 8.2
+    float p = Random::randUniformFloat();
+    float q = Random::randUniformFloat();
+    azimuth = 2 * PI * p;
+    elevation = acos(sqrt(q));
 
     // Convert spherical coordinates to Cartesian
     float x = cos(azimuth) * sin(elevation);

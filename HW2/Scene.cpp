@@ -6,7 +6,8 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
 
-
+// ==================== Task 5 ====================
+/*
 Vec3 Scene::trace(const Ray &ray, int bouncesLeft, bool discardEmission) {
     if constexpr(DEBUG) {
         assert (ray.isNormalized());
@@ -14,24 +15,60 @@ Vec3 Scene::trace(const Ray &ray, int bouncesLeft, bool discardEmission) {
     if (bouncesLeft < 0) return {};
 
     // TODO
-    Intersection inter = getIntersection(ray);
-    // intersection false
+    Intersection inter = getIntersection(ray); // find the intersection
     if (!inter.happened) 
         return Vec3(0.0f, 0.0f, 0.0f);
-    // Task 5.3 Diffuse scene
-    //Vec3 diffuseColor = inter.object->kd; // diffuse    
-    //return diffuseColor;
+    Vec3 diffuseColor = inter.object->kd; // return its diffuse color    
+    return diffuseColor;
+}
+*/
+// ==================== Task 6 ====================
+/*
+Vec3 Scene::trace(const Ray& ray, int bouncesLeft, bool discardEmission) {
+    if constexpr (DEBUG) {
+        assert(ray.isNormalized());
+    }
+    if (bouncesLeft < 0) return {};
 
-    // Task 6.3 Estimate DI by Monte Carlo sampling
+    // TODO
+    Intersection inter = getIntersection(ray);
+    if (!inter.happened) return Vec3(0.0f, 0.0f, 0.0f);
+    
+    Vec3 R_out = inter.object->ke; // emission
+    // randomly shoot a ray in the hemisphere.
+    Vec3 sample_dir = Random::randomHemisphereDirection(inter.getNormal()); // w_i
+    Ray nextRay(inter.pos, sample_dir); // construct the secondRay
+    
+    // if the sampling ray intersects
+    if (getIntersection(nextRay).happened) {
+        // Task 6 Direct Illumination
+        Vec3 L_i = getIntersection(nextRay).object->ke; // emission radiance
+        Vec3 brdf = inter.calcBRDF(-sample_dir, -ray.dir); // fr
+        float cosineTerm = nextRay.dir.dot(inter.getNormal());
+        R_out += (2 * PI) * L_i * brdf * cosineTerm; // Monte Carlo sampling
+    }
+
+    return R_out;
+}
+*/
+// ==================== Task 7 ====================
+
+Vec3 Scene::trace(const Ray& ray, int bouncesLeft, bool discardEmission) {
+    if constexpr (DEBUG) {
+        assert(ray.isNormalized());
+    }
+    if (bouncesLeft < 0) return {};
+
+    // TODO
+    Intersection inter = getIntersection(ray);
+    if (!inter.happened)         
+        return Vec3(0.0f, 0.0f, 0.0f);
     Vec3 R_out = inter.object->ke; // emission
     Vec3 sample_dir = Random::randomHemisphereDirection(inter.getNormal()); // w_i
     Ray nextRay(inter.pos, sample_dir); // construct the secondRay
     // if the sampling ray intersects
     if (getIntersection(nextRay).happened) {
-        // Task 6 Direct Illumination
-        //Vec3 L_i = getIntersection(nextRay).object->ke; // emission radiance
-        
-        // Task 7 Global Illumination
+        // Global Illumination
         Vec3 L_i = trace(nextRay, bouncesLeft - 1, false); // recursion
         Vec3 brdf = inter.calcBRDF(-sample_dir, -ray.dir); // fr
         float cosineTerm = nextRay.dir.dot(inter.getNormal());
@@ -40,6 +77,52 @@ Vec3 Scene::trace(const Ray &ray, int bouncesLeft, bool discardEmission) {
 
     return R_out;
 }
+
+// ==================== Task 8 ====================
+/*
+Vec3 Scene::trace(const Ray& ray, int bouncesLeft, bool discardEmission) {
+    if constexpr (DEBUG) {
+        assert(ray.isNormalized());
+    }
+    if (bouncesLeft < 0) return {};
+
+    // TODO
+    Intersection inter = getIntersection(ray);
+    if (!inter.happened)
+        return Vec3(0.0f, 0.0f, 0.0f);
+    Vec3 R_out = discardEmission? Vec3(0.0f, 0.0f, 0.0f) : inter.object->ke; // discard emission
+
+    // ---------- direct radiance (L from the light source) ----------    
+    Intersection lightSample = sampleLight(); // a sample on the light, not an actual intersection
+    Vec3 light_dir = lightSample.pos - inter.pos;
+    float d = light_dir.getLength();            // distanceToLight
+    light_dir.normalize();
+    Ray rayToLight(inter.pos, light_dir);       // second ray as described in HW
+    if (getIntersection(rayToLight).mesh == lightSample.mesh) {
+        Vec3 L_di = getIntersection(rayToLight).object->ke; // direct instance radiance
+        Vec3 brdf = inter.calcBRDF(-light_dir, -ray.dir); // fr
+        float cosineTerm1 = light_dir.dot(inter.getNormal());
+        float cosineTerm2 = -light_dir.dot(lightSample.getNormal());
+        float pdfLightSample = 1 / lightArea;
+        R_out += L_di * brdf * cosineTerm1 * cosineTerm2 / (pdfLightSample * d * d); // Monte Carlo
+    }
+   
+    // ---------- indirect radiance (L from bouncing rays) ----------
+    Vec3 sample_dir = Random::cosWeightedHemisphere(inter.getNormal()); // importance sampling
+    sample_dir.normalize();
+    Ray rayCosWeight(inter.pos, sample_dir);    // first ray as described in HW
+    // if the sampling ray intersects
+    if (getIntersection(rayCosWeight).happened) {        
+        Vec3 L_i = trace(rayCosWeight, bouncesLeft - 1, true); // discard the direct radiance
+        Vec3 brdf = inter.calcBRDF(-sample_dir, -ray.dir);      // fr
+        float cosineTerm = sample_dir.dot(inter.getNormal());
+        float pdfWeightSample = sample_dir.dot(inter.getNormal()) / PI;
+        R_out += L_i * brdf * cosineTerm / pdfWeightSample; // Monte Carlo
+    }
+
+    return R_out;
+}
+*/
 
 tinyobj::ObjReader Scene::reader {};
 
