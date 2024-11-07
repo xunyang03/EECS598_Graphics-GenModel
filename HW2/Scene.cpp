@@ -52,7 +52,7 @@ Vec3 Scene::trace(const Ray& ray, int bouncesLeft, bool discardEmission) {
 }
 */
 // ==================== Task 7 ====================
-
+/*
 Vec3 Scene::trace(const Ray& ray, int bouncesLeft, bool discardEmission) {
     if constexpr (DEBUG) {
         assert(ray.isNormalized());
@@ -77,9 +77,9 @@ Vec3 Scene::trace(const Ray& ray, int bouncesLeft, bool discardEmission) {
 
     return R_out;
 }
-
+*/
 // ==================== Task 8 ====================
-/*
+
 Vec3 Scene::trace(const Ray& ray, int bouncesLeft, bool discardEmission) {
     if constexpr (DEBUG) {
         assert(ray.isNormalized());
@@ -122,7 +122,6 @@ Vec3 Scene::trace(const Ray& ray, int bouncesLeft, bool discardEmission) {
 
     return R_out;
 }
-*/
 
 tinyobj::ObjReader Scene::reader {};
 
